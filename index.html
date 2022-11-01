@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta name="description" content="Deep learning approaches for black-box modelling of audio effects have shown promise, however, the majority of existing work focuses on nonlinear 
+        effects with behaviour on relatively short time-scales, such as guitar amplifiers and distortion.
+        While recurrent and convolutional architectures can theoretically be extended to capture behaviour at longer time scales, we show that simply scaling 
+        the width, depth, or dilation factor of existing architectures does not result in satisfactory performance when modelling audio effects such as fuzz and dynamic range compression.
+        To address this, we propose the integration of time-varying feature-wise linear modulation into existing temporal convolutional backbones, an approach that enables learnable 
+        adaptation of the intermediate activations.
+        We demonstrate that our approach more accurately captures long-range dependencies for a range of fuzz and compressor implementations across both time and 
+        frequency domain metrics.">
+        <meta name="author" content="Marco Comunità">
+        <title>Modelling Black-box Audio Effects with Time-varying Feature Modulation</title>
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">    
+    </head>
+  <body>
+    <div class="jumbotron jumbotron-fluid bg-dark text-center">
+        <div class="container">
+            <h1 class="text-white">Modelling Black-box Audio Effects with<br>Time-varying Feature Modulation</h1>
+            <p class="lead">
+                <a href="https://mcomunita.github.io/" target="_blank">Marco Comunit&agrave;,</a>
+                <a href="https://www.christiansteinmetz.com/" target="_blank">Christian J. Steinmetz, </a> 
+                <a href="https://pquochuy.github.io/" target="_blank">Huy Phan, </a>
+                <a href="http://www.eecs.qmul.ac.uk/~josh/index.htm" target="_blank">Joshua D. Reiss</a> 
+            </p>
+            <a class="btn btn-success" href="link to arxiv" target="_blank" role="button">Paper</a>
+            <a class="btn btn-light" href="https://github.com/mcomunita/gcn-tfilm" target="_blank" role="button">Code</a>
+            <a class="btn btn-danger" href="https://zenodo.org/record/7271558#.Y2ErNOzP0-Q" target="_blank" role="button">Dataset</a>
+            
+            <!-- <p></p>
+            <p class="lead text-white text-center">Dataset:</p>
+            <div class="btn-group" role="group">
+                <a type="button" class="btn btn-secondary" href="https://doi.org/10.5281/zenodo.4298000">Custom Fuzz</a>
+                <a type="button" class="btn btn-secondary" href="https://doi.org/10.5281/zenodo.4296040">Mono Continuous</a>
+                <a type="button" class="btn btn-secondary" href="https://doi.org/10.5281/zenodo.4298025">Poly Discrete</a>
+                <a type="button" class="btn btn-secondary" href="https://doi.org/10.5281/zenodo.4298017">Poly Continuous</a>
+              </div> -->
+        </div>
+    </div>
+
+    <div class="container" style="width: 70%;">
+        <div class="section">
+            <h2>Abstract</h2>
+            <hr>
+            <p>
+                Deep learning approaches for black-box modelling of audio effects have shown promise, however, the majority of existing work focuses on nonlinear 
+                effects with behaviour on relatively short time-scales, such as guitar amplifiers and distortion.
+                While recurrent and convolutional architectures can theoretically be extended to capture behaviour at longer time scales, we show that simply scaling 
+                the width, depth, or dilation factor of existing architectures does not result in satisfactory performance when modelling audio effects such as fuzz and dynamic range compression.
+                To address this, we propose the integration of time-varying feature-wise linear modulation into existing temporal convolutional backbones, an approach that enables learnable 
+                adaptation of the intermediate activations.
+                We demonstrate that our approach more accurately captures long-range dependencies for a range of fuzz and compressor implementations across both time and 
+                frequency domain metrics.
+            </p>
+        </div>
+
+        <br>
+        <!-- <div class="section">
+            <h2 class="">Dataset</h2>
+            <hr>
+    
+            <p>
+                To assemble our dataset we selected 13 overdrive, distortion and fuzz plug-ins designed to emulate some of the most iconic and 
+                widely used analogue guitar effect pedals. All the plugins have 2 or 3 controls and, regardless of the specific name adopted 
+                by the designer, the controls can be identified by their processing function: Level, Gain, Tone/Equalisation. 
+                
+                For training and testing purposes, 4 sub-datasets were generated: 
+                <a href="https://doi.org/10.5281/zenodo.4298000">Mono Discrete</a> , 
+                <a href="https://doi.org/10.5281/zenodo.4296040">Mono Continuous</a>, 
+                <a href="https://doi.org/10.5281/zenodo.4298025">Poly Discrete</a> and 
+                <a href="https://doi.org/10.5281/zenodo.4298017">Poly Continuous</a>.
+            </p>
+            
+            <table class="table table-sm table-borderless">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Designer</th>
+                        <th scope="col">Plugin</th>
+                        <th scope="col">Emulation of</th>
+                        <th scope="col">Id</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">Audified</th>
+                        <td>MultiDrive Pedal Pro</td>
+                        <td>Ibanez TS808</td>
+                        <td>808</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Ibanez TS9</td>
+                        <td>TS9</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Boss BD2</td>
+                        <td>BD2</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Boss OD1</td>
+                        <td>OD1</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Boss SD1</td>
+                        <td>SD1</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Boss DS1</td>
+                        <td>DS1</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>ProCo Rat</td>
+                        <td>RAT</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>MXR Distortion+</td>
+                        <td>DPL</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Arbiter Fuzz Face</td>
+                        <td>FFC</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td></td>
+                        <td>Electro-Harmonix Big Muff</td>
+                        <td>BMF</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Mercuriall</th>
+                        <td>Greed Smasher</td>
+                        <td>Mesa/Boogie Grid Slammer</td>
+                        <td>MGS</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Analog Obsession</th>
+                        <td>Pig Pie</td>
+                        <td>Electro-Harmonix Russian Big Muff</td>
+                        <td>RBM</td>
+                    </tr>
+                    <tr>
+                        <th scope="row"></th>
+                        <td>Zupaa</td>
+                        <td>Vox Tone Bender</td>
+                        <td>VTB</td>
+                    </tr>
+                </tbody>
+            </table>
+            <hr>
+            <p>
+            The first two subsets (Mono Discrete, Poly Discrete) use a discrete set of combinations selected as the most common 
+            and representative settings a person might use: Gain = [0.0, 0.1, 0.2, 0.5, 0.8, 1.0], Tone/Eq = [0.0, 0.2, 0.5, 0.8, 1.0]. 
+            Also, since the Level control has no effect on the output timbre it was set to 1.0 for every combination.
+            For the second two subsets (Mono Continuous, Poly Continuous), both unprocessed samples as well as settings' values were 
+            drawn from a uniform distribution.
+            </p>
+
+            <table class="table table-sm table-borderless">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">Gain</th>
+                        <th scope="col">Tone/Eq</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">808</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">TS9</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">BD2</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">OD1</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>---</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">SD1</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">DS1</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">RAT</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">DPL</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>---</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">FFC</th>
+                        <td>[1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                        <td>---</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">BMF</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">MGS</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">RBM</th>
+                        <td>[1.0]</td>
+                        <td>[0.2, 0.5, 0.8, 1.0]</td>
+                        <td>[0.0, 0.2, 0.5, 0.8, 1.0]</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">VTB</th>
+                        <td>[1.0]</td>
+                        <td>[0.1, 0.2, 0.5, 0.8, 1.0]</td>
+                        <td>---</td>
+                    </tr>
+                </tbody>
+            </table>
+            <hr>
+        </div> -->
+
+        <!-- <br>
+        <div class="section">
+            <h2>Architecture</h2>
+            <hr>
+            <p>
+                The classification (FxNet) and estimation (SetNetCond) networks are both based on 2 convolutional and 3 fully connected layers, 
+                with batch normalisation layers at each hidden level. SetNetCond is conditioned on the effect class to improve the settings estimation.
+                In this way, once the plugin is identified by FxNet, we can pass the information to SetNetCond. FxNet is trained with cross-entropy loss
+                while SetNetCond with Mean Square Error
+            </p>
+            <table class="table table-sm table-borderless">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Layer</th>
+                        <th scope="col">Size</th>
+                        <th scope="col">#Fmaps</th>
+                        <th scope="col">Activation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">Conv 2D</th>
+                        <td>5x5</td>
+                        <td>6</td>
+                        <td>Linear</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Batch Norm</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Activation</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>ReLU</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Max Pool</th>
+                        <td>2x2</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Conv 2D</th>
+                        <td>5x5</td>
+                        <td>12</td>
+                        <td>Linear</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Batch Norm</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Activation</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>ReLU</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Max Pool</th>
+                        <td>2x2</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Fully Connected</th>
+                        <td>120</td>
+                        <td>-</td>
+                        <td>Linear</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Batch Norm</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Activation</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>ReLU</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Fully Connected</th>
+                        <td>60</td>
+                        <td>-</td>
+                        <td>Linear</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Batch Norm</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Activation</th>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>ReLU</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Fully Connected</th>
+                        <td>(1)</td>
+                        <td>-</td>
+                        <td>(2)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <hr>
+            <p>
+                Trainable Parameters: FxNet = &sim;760k; SetNetCond = &sim;1.5M<br>
+                (1) FxNet = #Plug-ins - SetNet = #Settings<br>
+                (2) FxNet = Linear - SetNet = Tanh<br>
+            </p>
+        </div> -->
+
+        <!-- <div class="section">
+            <h2>Citation</h2>
+            <hr>
+            <div style="background-color: lightgray;">
+                <pre>
+                <code>
+    @article{comunità2021guitar,
+        title={Guitar Effects Recognition and Parameter Estimation with Convolutional Neural Networks},
+        author={Comunità, Marco and  Stowell, Dan and  Reiss, Joshua D.},
+        journal={Journal of the Audio Engineering Society},
+        year={2021},
+        volume={69},
+        number={7/8},
+        pages={594-604},
+        doi={}, 
+        month={July}}</code>
+                </pre>
+            </div>
+        </div> -->
+
+        <hr>
+        <footer>
+            <p>*Submitted to ICASSP 2023</p>
+            <p>Send feedback and questions to <a href="https://mcomunita.github.io/" target="_blank">Marco Comunit&agrave;</a>.</p>
+        </footer>
+
+    </div>
+    
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" integrity="sha384-+YQ4JLhjyBLPDQt//I+STsc9iw4uQqACwlvpslubQzn4u2UU2UFM80nGisd026JF" crossorigin="anonymous"></script>
+</body>
+</html>
